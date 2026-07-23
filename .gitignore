@@ -1,0 +1,61 @@
+# ===== Go =====
+# Compiled binaries and test binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Coverage and profiling output
+*.out
+*.prof
+*.pprof
+
+# Go workspace (local development only)
+go.work
+go.work.sum
+
+# Vendored dependencies (not committed for a library)
+vendor/
+
+# ===== Secrets & environment =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+
+# ===== Logs & temporary files =====
+*.log
+tmp/
+*.tmp
+
+# ===== OS =====
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Icon?
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+
+# ===== Editors / IDEs =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-workspace
+*.sublime-project
+
+# ===== Claude Code (local runtime state) =====
+# Ignore the whole .claude dir: it holds per-machine state only — local
+# settings, scheduled-task locks, worktrees, and a skills symlink pointing
+# into a local path (a dead link anywhere else, including GitHub). Add an
+# exception (e.g. !.claude/settings.json) if you later share project config.
+.claude/
