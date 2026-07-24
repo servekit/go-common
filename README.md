@@ -1,9 +1,4 @@
----
-name: go-common-usage
-description: MUST use when developing Go services that depend on github.com/servekit/go-common — covers configx, redisx, dbx, captcha, ratelimit, cronx, grpcx, lifecycle, signalx, xerr, logging, jsonx, ptr, gorx. Trigger this skill whenever the user mentions go-common, asks to add Redis/db/captcha/rate-limit/cron/gRPC features to a Go service, or works in a repo whose go.mod contains "github.com/servekit/go-common". Use it BEFORE writing any new infra code so the existing utility is reused instead of reinvented.
----
-
-# go-common 使用指南
+# go-common
 
 go-common 是公司内部 Go 基础库,模块路径 `github.com/servekit/go-common`,封装了配置加载、Redis/PostgreSQL、限流、验证码、消息发送、错误码、gRPC、定时任务、生命周期等通用能力。
 
@@ -34,7 +29,7 @@ import (
 - **错误包装**:`fmt.Errorf("context: %w", err)`,不要裸 return。
 - **Redis key 命名**:`<module>:<purpose>:<identifier>`,例如 `captcha:code:login:13800001111`、`ratelimit:login:13800001111`。
 - **测试隔离**:Redis 测试用 `redisx.NewTestClient(t)`,PostgreSQL 测试用 `dbx.SetupTestDB(t)`。两者都已封装好(miniredis / testcontainers)。
-- **现代 Go 语法**:`any` 替代 `interface{}`,Go 1.25+。
+- **现代 Go 语法**:`any` 替代 `interface{}`,Go 1.26+。
 
 ---
 
