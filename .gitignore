@@ -59,3 +59,7 @@ ehthumbs.db
 # into a local path (a dead link anywhere else, including GitHub). Add an
 # exception (e.g. !.claude/settings.json) if you later share project config.
 .claude/
+
+# ===== Local docs (superpowers workflow) =====
+# Design specs / implementation plans are kept locally only, not committed.
+docs/superpowers/
