@@ -74,7 +74,7 @@ func OffsetPaginate[T any](tx *gorm.DB, p PageParams) (*PageResult[T], error) {
 	var list []T
 	if !p.Count || total > 0 {
 		if err := tx.Session(&gorm.Session{}).
-			Offset(int((p.Page - 1) * p.PageSize)).
+			Offset((p.Page - 1) * p.PageSize).
 			Limit(p.PageSize).
 			Find(&list).Error; err != nil {
 			return nil, err

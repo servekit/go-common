@@ -14,20 +14,20 @@ go-common 是基础工具库，供业务服务引入。包含错误码、验证�
 - key 命名：`<module>:<purpose>:<identifier>`，如 `captcha:code:login:13800001111`
 - 测试用 `redisx.NewTestClient(t)` 做内存 Redis（miniredis 封装）
 
-### PostgreSQL / GORM
+### PostgreSQL / MySQL / SQLite / GORM
 
-- 使用 `gorm.io/gorm` + `gorm.io/driver/postgres`
-- 统一使用 `dbx.New(cfg)` 创建数据库连接（含连接池、slog 日志、禁用外键）
-- GORM 日志通过 `dbx` 内置的 slog logger 实现，与 `log/slog` 统一
-- 配置项 `log_level` 控制 GORM 日志级别：silent, error, warn, info
-- 使用 `gorm.io/cli` 做代码生成（参考 gorm-cli-development skill）
-- Model 定义在 `internal/models/`，生成代码输出到 `internal/generated/`
+- 三方言均通过 `dbx` 支持:`gorm.io/driver/postgres`、`gorm.io/driver/mysql`、纯 Go 的 `github.com/glebarez/sqlite`(无需 CGO)
+- 统一使用 `dbx.New(cfg)` 创建数据库连接(含连接池、slog 日志、禁用外键),按 `cfg.Driver`(`postgres`/`mysql`/`sqlite`)选方言;只有 `Driver` 对应的子配置(`*PostgresConfig`/`*MySQLConfig`/`*SQLiteConfig`)生效
+- GORM 日志通过 `dbx` 内置的 slog logger 实现,与 `log/slog` 统一
+- 配置项 `log_level` 控制 GORM 日志级别:silent, error, warn, info
+- 使用 `gorm.io/cli` 做代码生成(参考 gorm-cli-development skill)
+- Model 定义在 `internal/models/`,生成代码输出到 `internal/generated/`
 
 ### 数据库集成测试
 
-- 使用 `dbx.SetupTestDB(t)` 启动 PostgreSQL testcontainer（已封装在 dbx 包）
-- 每个测试用例前清理数据（truncate 或事务回滚），保证测试隔离
-- Error path（连接失败、超时等）可用 `go-sqlmock` 做单元测试补充
+- 使用 `dbx.SetupTestDB(t, driver)` 启动对应数据库(postgres/mysql 用 testcontainer,sqlite 用临时文件库,已封装在 dbx 包)
+- 每个测试用例前清理数据(truncate 或事务回滚),保证测试隔离
+- Error path(连接失败、超时等)可用 `go-sqlmock` 做单元测试补充
 
 ### 日志
 
@@ -131,7 +131,7 @@ go-common/
 ├── captcha/      # 验证码生成、存储、限流、校验
 ├── configx/      # yaml/env/flag 配置加载
 ├── cronx/        # 定时任务（panic recovery + slog）
-├── dbx/          # GORM 数据库初始化（PostgreSQL + slog logger）
+├── dbx/          # GORM 数据库初始化（PostgreSQL / MySQL / SQLite + slog logger）
 ├── gorx/         # goroutine 安全（GoSafe / RoutineGroup / TaskRunner）
 ├── grpcx/        # gRPC server 封装（含 health / gateway / interceptors）
 ├── jsonx/        # 高性能 JSON（sonic + encoding/json fallback）

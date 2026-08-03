@@ -28,7 +28,7 @@ import (
 - **本库不写日志**:所有诊断信息通过 error 返回交给调用方。少数 provider fallback 流程确实需要日志时,用标准库 `log/slog`。`fmt.Println` / `log.Println` 是反模式。
 - **错误包装**:`fmt.Errorf("context: %w", err)`,不要裸 return。
 - **Redis key 命名**:`<module>:<purpose>:<identifier>`,例如 `captcha:code:login:13800001111`、`ratelimit:login:13800001111`。
-- **测试隔离**:Redis 测试用 `redisx.NewTestClient(t)`,PostgreSQL 测试用 `dbx.SetupTestDB(t)`。两者都已封装好(miniredis / testcontainers)。
+- **测试隔离**:Redis 测试用 `redisx.NewTestClient(t)`,数据库测试用 `dbx.SetupTestDB(t, driver)`。两者都已封装好(miniredis / testcontainers + SQLite 临时文件)。
 - **现代 Go 语法**:`any` 替代 `interface{}`,Go 1.26+。
 
 ---
@@ -39,7 +39,7 @@ import (
 |------|------|------|
 | 加载 yaml/env/flag 配置 | `configx` | `configx.Load(&cfg, opts...)` |
 | 连 Redis(standalone 或 sentinel) | `redisx` | `redisx.New(cfg)` |
-| 连 PostgreSQL(GORM) | `dbx` | `dbx.New(cfg)` |
+| 连 PostgreSQL / MySQL / SQLite(GORM) | `dbx` | `dbx.New(cfg)`(按 `cfg.Driver` 选方言) |
 | 验证码生成、存储、限流、校验 | `captcha` | `captcha.New(cfg)` |
 | Redis 固定窗口限流 | `ratelimit` | `ratelimit.NewRedisLimiter(client, cfg)` |
 | Redis 分布式锁 | `redisx` | `redisx.NewLock(client, cfg)` |
@@ -144,18 +144,20 @@ client, err := redisx.New(&redisx.Config{
 
 **分布式锁**:`redisx.NewLock(client, &LockConfig{Prefix, TTL, Tries, Wait})` → `Acquire(ctx, target)` 返回 id → 业务逻辑 → `Release(ctx, target, id)`。长任务用 `KeepAlive(ctx, target, id)` 续期(返回 CancelFunc)。
 
-### dbx — PostgreSQL + GORM
+### dbx — PostgreSQL / MySQL / SQLite + GORM
 
-`dbx.New(cfg)` 创建 `*gorm.DB`,内置连接池配置、slog logger、禁用外键约束(默认)、可选 table 前缀。
+`dbx.New(cfg)` 创建 `*gorm.DB`,按 `cfg.Driver` 选方言,连接池、slog logger、禁用外键(默认)、table 前缀三方言统一。**切库只改配置,业务代码不动**(`*gorm.DB` 接口一致)。
 
 ```go
 db, err := dbx.New(&dbx.Config{
-    Host:            "localhost",
-    Port:            5432,
-    User:            "pay",
-    Password:        "...",
-    DBName:          "pay",
-    SSLMode:         "disable",
+    Driver: dbx.DriverPostgres, // postgres | mysql | sqlite(空串默认 postgres)
+    Postgres: &dbx.PostgresConfig{
+        Host: "localhost", Port: 5432, User: "pay", Password: "...", DBName: "pay",
+        SSLMode: "disable",
+    },
+    // MySQL/SQLite 同理,只填 Driver 对应那一个子配置:
+    //   MySQL:   &dbx.MySQLConfig{Host, Port, User, Password, DBName, Params}
+    //   SQLite:  &dbx.SQLiteConfig{Path: "app.db"}   // 空 Path = 内存库
     MaxOpenConns:    50,
     MaxIdleConns:    10,
     ConnMaxLifetime: 30 * time.Minute,
@@ -167,15 +169,20 @@ db, err := dbx.New(&dbx.Config{
 })
 ```
 
+三个方言子配置(指针,只有 `Driver` 对应的生效):
+- `PostgresConfig`:`Host / Port / User / Password / DBName / SSLMode / Schema`(`Schema` 设连接级 `search_path`,未限定表名按它解析,支持逗号分隔如 `app,public`;空用默认 `public`)。
+- `MySQLConfig`:`Host / Port / User / Password / DBName` + `Params map[string]string`(默认补 `parseTime=true & loc=Local & charset=utf8mb4`)。
+- `SQLiteConfig`:`Path`(文件路径,空 = `:memory:`);自动开 `foreign_keys` + `busy_timeout` pragma,避开连接池并发写坑。SQLite 用纯 Go 的 `github.com/glebarez/sqlite`,**无需 CGO**。
+
 **关键约定**:
 - `LogLevel` 控制日志:测试用 `silent`,生产用 `warn`(只打慢查询和错误)。
 - `SkipDefaultTx = true`:GORM 默认每条写都开事务,单操作时是浪费。
 - `DisableFK = true`:迁移时不创建外键,业务层维护关系。
-- 迁移:`dbx.AutoMigrate(db, &User{}, &Order{})`(带 slog 日志)。
+- 迁移:`dbx.AutoMigrate(db, &User{}, &Order{})`(带 slog 日志,三方言通用)。
 
-**分页**:`OffsetPaginate[T](tx, PageParams{Page, PageSize})` 返回 `*PageResult[T]{Items, Total, Page, PageSize}`。`ClampPageSize(size)` 防止超大 page size 拖垮 DB。
+**分页**:`OffsetPaginate[T](tx, PageParams{Page, PageSize})` 返回 `*PageResult[T]{List, Total, TotalPages}`。`ClampPageSize(size)` 防止超大 page size 拖垮 DB。
 
-**测试**:`dbx.SetupTestDB(t)` 启动 PostgreSQL testcontainer,自动 truncate。错误路径(连接失败、SQL 错误)用 `go-sqlmock` 补充单元测试。
+**测试**:`dbx.SetupTestDB(t, dbx.DriverPostgres)` 启动对应 testcontainer(postgres/mysql);`dbx.SetupTestDB(t, dbx.DriverSQLite)` 用临时文件库,**无需 Docker**。错误路径(连接失败、SQL 错误)用 `go-sqlmock` 补充单元测试。
 
 ---
 
@@ -437,7 +444,7 @@ n = ptr.Deref[*int](nil) // 0 — nil 安全
 
 | 反模式 | 正确做法 |
 |--------|---------|
-| 自己拼 PostgreSQL DSN | `dbx.New(&dbx.Config{...})` |
+| 自己拼 PostgreSQL / MySQL / SQLite DSN | `dbx.New(&dbx.Config{Driver: ..., Postgres/MySQL/SQLite: ...})` |
 | `redis.NewClient(...)` 不 Ping | `redisx.New(cfg)`(自动 Ping) |
 | `go func() { ... }()` 裸跑 | `gorx.GoSafe(fn)`(panic 自动 recover) |
 | `fmt.Errorf("user %d not found", id)` | `xcodes.ErrNotFound.New(fmt.Sprintf("user %d", id))` |
