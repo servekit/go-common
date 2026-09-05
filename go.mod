@@ -1,8 +1,7 @@
 module github.com/servekit/go-common
 
-go 1.26.1
+go 1.26.6
 
-toolchain go1.26.6
 
 require (
 	github.com/alicebob/miniredis/v2 v2.38.0
