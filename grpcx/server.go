@@ -37,6 +37,11 @@ type (
 	ServerConfig struct {
 		GRPCAddr    string
 		GatewayAddr string // empty = no gateway
+		// GatewayWrap, when set, wraps the gateway's HTTP handler — the hook
+		// for edge middleware (auth, rate limiting, request logging). It
+		// sees every request before transcoding, including routes mounted
+		// directly on the mux via HandlePath. nil = no wrapping.
+		GatewayWrap func(http.Handler) http.Handler
 		// ServerOptions are passed to grpc.NewServer in addition to the
 		// interceptor chain. Use this for limits that must be set on the
 		// server itself — e.g. grpc.MaxRecvMsgSize when a service accepts
@@ -160,9 +165,14 @@ func (s *Server) startGateway() error {
 		return fmt.Errorf("register gateway: %w", err)
 	}
 
+	handler := http.Handler(mux)
+	if s.cfg.GatewayWrap != nil {
+		handler = s.cfg.GatewayWrap(handler)
+	}
+
 	go func() {
 		slog.Info("HTTP gateway listening", "addr", s.cfg.GatewayAddr)
-		if err := http.ListenAndServe(s.cfg.GatewayAddr, mux); err != nil {
+		if err := http.ListenAndServe(s.cfg.GatewayAddr, handler); err != nil {
 			slog.Error("HTTP gateway serve", "error", err)
 		}
 	}()
