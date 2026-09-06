@@ -52,6 +52,7 @@ import (
 | 高性能 JSON | `jsonx` | `jsonx.Marshal(v)` |
 | 指针工具 | `ptr` | `ptr.Ref(v)` / `ptr.Deref(p)` |
 | 全局 slog logger 初始化 | `logging` | `logging.Setup(cfg)` |
+| User-Agent 解析(OS/浏览器/设备机型) | `useragent` | `useragent.Parse(ua)` |
 
 ---
 
@@ -437,6 +438,24 @@ n = ptr.Deref[*int](nil) // 0 — nil 安全
 ```
 
 避免到处写 `i := 42; &i` 这种 boilerplate。
+
+### useragent — User-Agent 解析
+
+自研规则引擎 + 从 Matomo device-detector 精选改写的规则数据(go:embed YAML, LGPL-3.0 出处见 `useragent/NOTICE.md`),覆盖 Windows/macOS/Linux/iOS/Android/HarmonyOS(含 NEXT 的 OpenHarmony token)、Chrome/Safari/Edge/Firefox/Opera/HuaweiBrowser/Quark(夸克)/ArkWeb/UC/QQ/百度/360/搜狗、WeChat(mobile_app)、okhttp/curl/grpc-go 等 HTTP 库(library),以及主流品牌的机型提取。
+
+```go
+r := useragent.Parse("Mozilla/5.0 (phone; Android 13; OpenHarmony 7.0) ... Quark/7.4.6.681")
+// r.OS = "OpenHarmony", r.OSVersion = "7.0"
+// r.Client = "Quark", r.ClientVersion = "7.4.6.681", r.ClientKind = useragent.KindBrowser
+// r.DeviceClass = useragent.ClassSmartphone
+```
+
+**关键点**:
+- `Parse(ua) Result` 是并发安全的包级入口;默认实例(全部正则)用 `sync.Once` 懒编译一次。
+- `ClientKind`:`KindBrowser` / `KindMobileApp`(微信、百度 App 这类内嵌 webview 的应用)/ `KindLibrary`(okhttp、curl、grpc-go 等非浏览器客户端)/ 空(未知)。user-service 靠它把 API 客户端会话归类。
+- `DeviceClass`:`ClassDesktop` / `ClassSmartphone` / `ClassTablet` / `ClassMobile`(明显移动端但分不清手机平板) / 空(未知)。
+- 匹配不到的字段留空,垃圾输入不 panic;爬虫命中时 `Result.Bot` 非空且其余字段为空。
+- 自定义数据注入(测试用):`useragent.New(useragent.WithOSRules(...))`,四个类别(`WithOSRules` / `WithClientRules` / `WithDeviceRules` / `WithBotRules`)可独立替换,未替换的类别用内置数据。
 
 ---
 

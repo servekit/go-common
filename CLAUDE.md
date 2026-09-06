@@ -141,6 +141,7 @@ go-common/
 ├── ratelimit/    # Redis 固定窗口限流
 ├── redisx/       # Redis 客户端初始化 + 分布式锁
 ├── signalx/      # 信号驱动优雅关闭
+├── useragent/    # User-Agent 解析（OS / 客户端 / 设备机型，自研引擎 + Matomo 精选规则）
 ├── xerr/         # 错误码与结构化错误
 │   └── xcodes/
 └── go.mod

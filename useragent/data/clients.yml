@@ -1,0 +1,269 @@
+# Client rules (mobile apps, HTTP libraries, browsers) in one ordered list,
+# first match wins. Ordering follows Matomo's device-detector: mobile apps
+# are matched before browsers so "MicroMessenger" wins over the Chrome token
+# a WeChat web view carries; libraries come before browsers so a UA like
+# "Mozilla/5.0 ... okhttp/4.12" is reported as the HTTP client it is.
+# Browsers are ordered most-specific (vendor forks) first, generic
+# Chrome/Safari last.
+#
+# Matching is case-insensitive behind a word boundary, so a single-cased
+# token ("HuaweiBrowser") matches all casings — no HUAWEI/Huawei doublets.
+# The engine derives a required literal from the start of each pattern as a
+# prefilter, so rules should begin with a plain product token rather than a
+# group whenever possible (see rules.go, requiredLiteral).
+#
+# Rules are adapted from Matomo device-detector
+# regexes/client/{browsers,mobile_apps,libraries}.yml (LGPL-3.0-or-later)
+# to RE2 syntax; see NOTICE.md.
+
+##########
+# Mobile apps (kind: mobile_app)
+##########
+- regex: 'MicroMessenger/(\d+[.\d]+)'
+  name: 'WeChat'
+  version: '$1'
+  kind: mobile_app
+- regex: 'WeChat/(\d+[.\d]+)'
+  name: 'WeChat'
+  version: '$1'
+  kind: mobile_app
+- regex: 'wxwork/(\d+[.\d]+)'
+  name: 'WeCom'
+  version: '$1'
+  kind: mobile_app
+- regex: 'baiduboxapp/(\d+[.\d]+)'
+  name: 'Baidu Box App'
+  version: '$1'
+  kind: mobile_app
+
+##########
+# HTTP client libraries (kind: library)
+##########
+- regex: 'okhttp/(\d+[.\d]+)'
+  name: 'okhttp'
+  version: '$1'
+  kind: library
+- regex: 'network-okhttp3/(\d+[.\d]+)'
+  name: 'okhttp'
+  version: '$1'
+  kind: library
+- regex: 'Go-http-client/(\d+[.\d]+)'
+  name: 'Go-http-client'
+  version: '$1'
+  kind: library
+- regex: '^Go /?(\d+[.\d]*)?(?: package http)?'
+  name: 'Go-http-client'
+  version: '$1'
+  kind: library
+- regex: 'python-requests/(\d+[.\d]+)'
+  name: 'python-requests'
+  version: '$1'
+  kind: library
+- regex: 'Apache-HttpClient(?:/?(\d+[.\d]+))?'
+  name: 'Apache-HttpClient'
+  version: '$1'
+  kind: library
+- regex: 'PostmanRuntime/(\d+[.\d]+)'
+  name: 'PostmanRuntime'
+  version: '$1'
+  kind: library
+- regex: 'curl(?:/(\d+[.\d]+))?'
+  name: 'curl'
+  version: '$1'
+  kind: library
+- regex: 'libcurl/(\d+[.\d]+)'
+  name: 'curl'
+  version: '$1'
+  kind: library
+- regex: 'Java/?(\d+[.\d]+)'
+  name: 'Java'
+  version: '$1'
+  kind: library
+- regex: 'Dalvik/(\d+[.\d]+)'
+  name: 'Dalvik'
+  version: '$1'
+  kind: library
+- regex: 'grpc-go/(\d+[.\d]+)'
+  name: 'grpc-go'
+  version: '$1'
+  kind: library
+- regex: 'CFNetwork(?:/(\d+[.\d]+))?'
+  name: 'CFNetwork'
+  version: '$1'
+  kind: library
+
+##########
+# Browsers, vendor forks first (kind: browser)
+##########
+# Quark (夸克) — HarmonyOS NEXT ships it over the ArkWeb engine; must precede
+# Chrome/Safari/ArkWeb so the app wins over the tokens its web view carries.
+- regex: 'QuarkPC/(\d+[.\d]+)'
+  name: 'QuarkPC'
+  version: '$1'
+  kind: browser
+- regex: 'Quark(?:/(\d+[.\d]+))?'
+  name: 'Quark'
+  version: '$1'
+  kind: browser
+# ArkWeb — HarmonyOS web engine, also surfaces on its own in web view UAs.
+- regex: 'ArkWeb(?:/(\d+[.\d]+))?'
+  name: 'ArkWeb'
+  version: '$1'
+  kind: browser
+# Huawei Browser (PC token HBPC, mobile token HuaweiBrowser).
+- regex: 'HBPC/(\d+[.\d]+)'
+  name: 'Huawei Browser'
+  version: '$1'
+  kind: browser
+- regex: 'HuaweiBrowser(?:/(\d+[.\d]+))?'
+  name: 'Huawei Browser'
+  version: '$1'
+  kind: browser
+# Sogou
+- regex: 'SogouMobileBrowser/(\d+[.\d]+)'
+  name: 'Sogou Mobile Browser'
+  version: '$1'
+  kind: browser
+- regex: 'SE (\d+[.\d]+)'
+  name: 'Sogou Explorer'
+  version: '$1'
+  kind: browser
+- regex: 'MetaSr'
+  name: 'Sogou Explorer'
+  version: ''
+  kind: browser
+# QQ Browser (MQQBrowser mobile, QQBrowser PC)
+- regex: 'MQQBrowser(?:/([.\d]+))?'
+  name: 'QQ Browser'
+  version: '$1'
+  kind: browser
+- regex: 'QQBrowser(?:/([.\d]+))?'
+  name: 'QQ Browser'
+  version: '$1'
+  kind: browser
+# UC (UCWEB is the legacy Java/MTK token: UCWEB/x.y is the framework version,
+# the browser version lives in a separate UCBrowser/ token)
+- regex: 'UCBrowser(?:[ /]?(\d+[.\d]+))?'
+  name: 'UC Browser'
+  version: '$1'
+  kind: browser
+- regex: 'UC Browser(?:[ /]?(\d+[.\d]+))?'
+  name: 'UC Browser'
+  version: '$1'
+  kind: browser
+- regex: 'UCWEB'
+  name: 'UC Browser'
+  version: ''
+  kind: browser
+# Baidu
+- regex: '(?:baidubrowser|bdbrowser(?:(?:hd)?_i18n)?|FlyFlow|BaiduHD)(?:[/ ](\d+[.\d]*))?'
+  name: 'Baidu Browser'
+  version: '$1'
+  kind: browser
+# 360 / Qihoo
+- regex: 'QihooBrowser(?:/(\d+[.\d]+))?'
+  name: 'Qihoo Browser'
+  version: '$1'
+  kind: browser
+- regex: 'QIHU 360[ES]E'
+  name: '360 Secure Browser'
+  version: ''
+  kind: browser
+# Microsoft Edge (modern Chromium tokens Edg/EdgA/EdgiOS/EdgW, legacy Edge/)
+- regex: 'EdgiOS[ /](\d+[.\d]+)'
+  name: 'Microsoft Edge'
+  version: '$1'
+  kind: browser
+- regex: 'EdgA[ /](\d+[.\d]+)'
+  name: 'Microsoft Edge'
+  version: '$1'
+  kind: browser
+- regex: 'EdgW[ /](\d+[.\d]+)'
+  name: 'Edge WebView'
+  version: '$1'
+  kind: browser
+- regex: 'Edg[ /](\d+[.\d]+)'
+  name: 'Microsoft Edge'
+  version: '$1'
+  kind: browser
+- regex: 'Edge[ /](\d+[.\d]+)'
+  name: 'Microsoft Edge'
+  version: '$1'
+  kind: browser
+# Opera (modern OPR/ token; Presto-era UAs carry the real version after "Version/")
+- regex: 'Opera Mini/(\d+[.\d]+)'
+  name: 'Opera Mini'
+  version: '$1'
+  kind: browser
+- regex: 'OPR[/ ](\d+[.\d]+)'
+  name: 'Opera'
+  version: '$1'
+  kind: browser
+- regex: 'Opera(?:[/ ]?9\.80.*Version/|[/ ]?)(\d+[.\d]+)'
+  name: 'Opera'
+  version: '$1'
+  kind: browser
+# Android vendor browsers
+- regex: 'SamsungBrowser/(\d+[.\d]+)'
+  name: 'Samsung Internet'
+  version: '$1'
+  kind: browser
+- regex: 'MiuiBrowser/(\d+[.\d]+)'
+  name: 'Mi Browser'
+  version: '$1'
+  kind: browser
+- regex: 'HeyTapBrowser/(\d+[.\d]+)'
+  name: 'OPPO Browser'
+  version: '$1'
+  kind: browser
+- regex: 'VivoBrowser/(\d+[.\d]+)'
+  name: 'vivo Browser'
+  version: '$1'
+  kind: browser
+# Firefox (FxiOS first so the iOS build is not caught by Safari rules below)
+- regex: 'FxiOS[ /](\d+[.\d]+)'
+  name: 'Firefox'
+  version: '$1'
+  kind: browser
+- regex: 'Firefox/(\d+[.\d]+)'
+  name: 'Firefox'
+  version: '$1'
+  kind: browser
+# Chrome (iOS token CriOS, then mobile, then generic desktop token last)
+- regex: 'CriOS[ /](\d+[.\d]+)'
+  name: 'Chrome Mobile iOS'
+  version: '$1'
+  kind: browser
+- regex: 'Chrome(?:/(\d+[.\d]+))? Mobile'
+  name: 'Chrome Mobile'
+  version: '$1'
+  kind: browser
+- regex: 'Chrome(?:/(\d+[.\d]+))?'
+  name: 'Chrome'
+  version: '$1'
+  kind: browser
+# Safari (after Chrome: Android Chrome UAs carry a Safari token too)
+- regex: 'iPhone.+Version/(\d+[.\d]+)'
+  name: 'Mobile Safari'
+  version: '$1'
+  kind: browser
+- regex: 'iPad.+Version/(\d+[.\d]+)'
+  name: 'Mobile Safari'
+  version: '$1'
+  kind: browser
+- regex: 'iPod.+Version/(\d+[.\d]+)'
+  name: 'Mobile Safari'
+  version: '$1'
+  kind: browser
+- regex: 'Version/(\d+[.\d]+) .*Mobile.*Safari/'
+  name: 'Mobile Safari'
+  version: '$1'
+  kind: browser
+- regex: 'Version/(\d+[.\d]+) .*Safari/'
+  name: 'Safari'
+  version: '$1'
+  kind: browser
+- regex: 'Safari(?:/\d+)?'
+  name: 'Safari'
+  version: ''
+  kind: browser

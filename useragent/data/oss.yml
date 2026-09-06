@@ -1,0 +1,144 @@
+# Operating system rules. Ordered most-specific first, first match wins.
+#
+# The order is load-bearing:
+#   - HarmonyOS / OpenHarmony must precede Android: HarmonyOS NEXT user
+#     agents freeze a fake "Android 13" compatibility token while the real
+#     OS token sits next to it.
+#   - iOS must precede macOS: iOS UAs contain "like Mac OS X".
+#   - Android must precede Linux: Android UAs contain "Linux; Android".
+#
+# Matching is case-insensitive behind a word boundary. The engine derives a
+# required literal from the start of each pattern as a prefilter, so rules
+# should begin with a plain product token rather than a group whenever
+# possible (see rules.go, requiredLiteral).
+#
+# Rules are adapted from Matomo device-detector regexes/oss.yml
+# (LGPL-3.0-or-later) to RE2 syntax; see NOTICE.md.
+
+##########
+# HarmonyOS / OpenHarmony (Huawei)
+##########
+- regex: 'OpenHarmony(?:[/ ](\d+[.\d]*))?'
+  name: 'OpenHarmony'
+  version: '$1'
+- regex: 'HarmonyOS(?:[/ ](\d+[.\d]*))?'
+  name: 'HarmonyOS'
+  version: '$1'
+- regex: 'Hmos(?:[/ ](\d+[.\d]*))?'
+  name: 'HarmonyOS'
+  version: '$1'
+
+##########
+# iOS / iPadOS
+##########
+- regex: 'iPhone OS[ /]?(\d+(?:[_.]\d+)*)'
+  name: 'iOS'
+  version: '$1'
+- regex: 'CPU OS[ /]?(\d+(?:[_.]\d+)*)'
+  name: 'iOS'
+  version: '$1'
+- regex: 'iOS[ /,]?(\d+[.\d]+)'
+  name: 'iOS'
+  version: '$1'
+- regex: 'iPhone OS'
+  name: 'iOS'
+  version: ''
+- regex: 'iPad'
+  name: 'iOS'
+  version: ''
+- regex: 'iPod'
+  name: 'iOS'
+  version: ''
+- regex: 'iPhone'
+  name: 'iOS'
+  version: ''
+
+##########
+# Windows Phone (before Android: its UAs carry a frozen "Android" token)
+##########
+- regex: 'Windows Phone(?: OS)?[ /]?(\d+[.\d]*)'
+  name: 'Windows Phone'
+  version: '$1'
+
+##########
+# Android
+##########
+- regex: 'Android[ /]?(\d+[.\d]*)'
+  name: 'Android'
+  version: '$1'
+- regex: 'Android'
+  name: 'Android'
+  version: ''
+
+##########
+# Windows
+##########
+- regex: 'Windows NT 6\.3'
+  name: 'Windows'
+  version: '8.1'
+- regex: 'Windows NT 6\.2'
+  name: 'Windows'
+  version: '8'
+- regex: 'Windows NT 6\.1'
+  name: 'Windows'
+  version: '7'
+- regex: 'Windows NT 6\.0'
+  name: 'Windows'
+  version: 'Vista'
+- regex: 'Windows NT 5\.1'
+  name: 'Windows'
+  version: 'XP'
+- regex: 'Windows NT 10\.0'
+  name: 'Windows'
+  version: ''   # Windows 10 and 11 share the NT 10.0 token; a version would be a guess.
+- regex: 'Windows'
+  name: 'Windows'
+  version: ''
+
+##########
+# macOS
+##########
+- regex: 'Mac OS X[ /]?(?:Version )?(\d+(?:[_.]\d+)+)'
+  name: 'macOS'
+  version: '$1'
+- regex: 'macOS[ /,]?(\d+[.\d]+)'
+  name: 'macOS'
+  version: '$1'
+- regex: 'Macintosh|Mac OS X'
+  name: 'macOS'
+  version: ''
+
+##########
+# Chrome OS
+##########
+- regex: 'CrOS'
+  name: 'Chrome OS'
+  version: ''
+
+##########
+# Linux distributions
+##########
+- regex: 'Ubuntu[ /]?(\d+[.\d]*)'
+  name: 'Ubuntu'
+  version: '$1'
+- regex: 'Ubuntu'
+  name: 'Ubuntu'
+  version: ''
+- regex: 'Fedora/?(\d+[.\d]*)?'
+  name: 'Fedora'
+  version: '$1'
+- regex: 'Debian'
+  name: 'Debian'
+  version: ''
+- regex: 'CentOS'
+  name: 'CentOS'
+  version: ''
+- regex: 'Arch ?Linux'
+  name: 'Arch Linux'
+  version: ''
+- regex: 'X11'
+  name: 'Linux'
+  version: ''
+- regex: 'Linux'
+  name: 'Linux'
+  version: ''

@@ -1,0 +1,37 @@
+# Crawler rules (lowest-cost subset: the crawlers that actually hit our
+# services, plus headless browsers). A bot match short-circuits the parse:
+# crawlers spoof browser user agents, so nothing else in the string is
+# trustworthy.
+#
+# Inspired by Matomo device-detector regexes/bots.yml (LGPL-3.0-or-later);
+# see NOTICE.md.
+- regex: 'Googlebot'
+  name: 'Googlebot'
+- regex: 'bingbot'
+  name: 'bingbot'
+- regex: 'Baiduspider'
+  name: 'Baiduspider'
+- regex: 'YandexBot'
+  name: 'YandexBot'
+- regex: 'DuckDuck(?:Bot|Go-Favicons-Bot)'
+  name: 'DuckDuckBot'
+- regex: 'Sogou (?:web |inst |news )?spider'
+  name: 'Sogou Spider'
+- regex: 'Bytespider'
+  name: 'Bytespider'
+- regex: 'PetalBot'
+  name: 'PetalBot'
+- regex: 'AhrefsBot'
+  name: 'AhrefsBot'
+- regex: 'SemrushBot'
+  name: 'SemrushBot'
+- regex: 'MJ12bot'
+  name: 'MJ12bot'
+- regex: 'GPTBot'
+  name: 'GPTBot'
+- regex: 'ClaudeBot'
+  name: 'ClaudeBot'
+- regex: 'CCBot'
+  name: 'CCBot'
+- regex: 'HeadlessChrome'
+  name: 'HeadlessChrome'

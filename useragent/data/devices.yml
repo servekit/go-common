@@ -1,0 +1,99 @@
+# Device rules, ordered most-specific first, first match wins. A curated,
+# brand-prefix based subset instead of Matomo's ~1.3MB mobiles.yml: models
+# for the brands that dominate our traffic, plus a generic fallback that
+# lifts the token after "Android <ver>;" out of the device fragment.
+# Unknown-brand Android UAs degrade to model-only (empty brand).
+#
+# Models drop the brand token when it is only a prefix ("HUAWEI P40" ->
+# model "P40", brand "Huawei"); they keep it when the remainder alone is
+# meaningless ("Pixel 8 Pro", "Mi 11").
+#
+# Matching is case-insensitive behind a word boundary, so a single-cased
+# token covers all casings (no HUAWEI/Huawei doublets). The engine derives a
+# required literal from the start of each pattern as a prefilter, so rules
+# should begin with a plain product token rather than a group whenever
+# possible (see rules.go, requiredLiteral). Models pass through a junk
+# filter (wv / Build/... / OpenHarmony / HMSCore ...).
+#
+# Rules are adapted from Matomo device-detector regexes/device/mobiles.yml
+# (LGPL-3.0-or-later); see NOTICE.md.
+
+##########
+# Apple (iPod/iPad before iPhone: an "iPod touch" UA also carries an
+# "iPhone OS" token, and the first matching rule wins)
+##########
+- regex: 'iPod'
+  model: 'iPod'
+  brand: 'Apple'
+  class: smartphone
+- regex: 'iPad'
+  model: 'iPad'
+  brand: 'Apple'
+  class: tablet
+- regex: 'iPhone'
+  model: 'iPhone'
+  brand: 'Apple'
+  class: smartphone
+
+##########
+# Huawei / Honor (HarmonyOS UAs put the model after the OS token)
+##########
+- regex: 'HarmonyOS[^;)]*; ([^;)]+)'
+  model: '$1'
+  brand: 'Huawei'
+- regex: 'OpenHarmony[^;)]*; ([^;)]+)'
+  model: '$1'
+  brand: 'Huawei'
+- regex: 'Huawei ([^;)]+)'
+  model: '$1'
+  brand: 'Huawei'
+- regex: 'Honor ([^;)]+)'
+  model: 'Honor $1'
+  brand: 'Honor'
+
+##########
+# Xiaomi / Redmi / POCO
+##########
+- regex: 'Redmi ([^;)]+)'
+  model: '$1'
+  brand: 'Xiaomi'
+- regex: 'POCO ([^;)]+)'
+  model: '$1'
+  brand: 'Xiaomi'
+- regex: 'Xiaomi ([^;)]+)'
+  model: '$1'
+  brand: 'Xiaomi'
+- regex: 'Mi ([^;)]+)'
+  model: 'Mi $1'
+  brand: 'Xiaomi'
+
+##########
+# OPPO / vivo / iQOO
+##########
+- regex: 'OPPO ([^;)]+)'
+  model: '$1'
+  brand: 'OPPO'
+- regex: 'vivo ([^;)]+)'
+  model: '$1'
+  brand: 'vivo'
+- regex: 'iQOO ([^;)]+)'
+  model: '$1'
+  brand: 'vivo'
+
+##########
+# Samsung (SM- model codes) / Google Pixel
+##########
+- regex: 'SM-([A-Za-z0-9]+)'
+  model: 'SM-$1'
+  brand: 'Samsung'
+- regex: 'Pixel ([^;)]+)'
+  model: 'Pixel $1'
+  brand: 'Google'
+
+##########
+# Generic Android fallback: "(Linux; Android 14; <model>; ...)".
+# The capture goes through the junk filter, so fragments like
+# "wv", "OpenHarmony 7.0" or "HMSCore 6.13" yield no model.
+##########
+- regex: 'Android[^;)]*; ([^;)]+)'
+  model: '$1'
