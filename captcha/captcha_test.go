@@ -301,21 +301,25 @@ func TestCaptcha_Generate_withSendError(t *testing.T) {
 	c := newTestCaptcha(t)
 	ctx := context.Background()
 
+	var sentCode string
 	captchaID, code, err := c.Generate(ctx, "test@example.com", "register", "email",
-		WithSend(func(_ context.Context, _, _, _, _ string) error {
+		WithSend(func(_ context.Context, _, code, _, _ string) error {
+			sentCode = code
 			return fmt.Errorf("SMTP down")
 		}),
 	)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "send code")
-	// Code is still returned even on send error.
-	require.NotEmpty(t, captchaID)
-	require.NotEmpty(t, code)
+	// A failed delivery means no usable verification: nothing is returned...
+	require.Empty(t, captchaID)
+	require.Empty(t, code)
 
-	// Code is still stored and can be verified despite send failure.
-	result, err := c.Verify(ctx, "test@example.com", code, "register", "email")
+	// ...and the stored code is rolled back — even the code the send callback
+	// actually saw cannot pass Verify, so a target that never received the
+	// message can never complete a verification-gated write.
+	result, err := c.Verify(ctx, "test@example.com", sentCode, "register", "email")
 	require.NoError(t, err)
-	require.True(t, result.Matched)
+	require.False(t, result.Matched)
 }
 
 func TestCaptcha_ttlForPurpose(t *testing.T) {

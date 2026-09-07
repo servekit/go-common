@@ -38,6 +38,10 @@ type Store interface {
 	// captchaID is the binding token returned by Generate; pass "" to skip the
 	// captchaID match check, otherwise the stored Record.CaptchaID must equal it.
 	Verify(ctx context.Context, purpose, channel, target, code, captchaID string) (*VerifyResult, error)
+	// Delete removes the stored record for purpose+channel+target. Generate
+	// calls it to roll back the stored code when the delivery callback fails,
+	// so a code is only ever verifiable after its delivery actually succeeded.
+	Delete(ctx context.Context, purpose, channel, target string) error
 }
 
 // RedisStore is a Redis-backed verification code store.
@@ -94,6 +98,13 @@ func (s *RedisStore) Set(ctx context.Context, purpose, channel, target string, r
 		return fmt.Errorf("marshal record: %w", err)
 	}
 	return s.client.Set(ctx, s.key(purpose, channel, target), data, ttl).Err()
+}
+
+// Delete removes the stored record. Generate calls it to roll back a code
+// whose delivery callback failed, keeping the invariant that a code is
+// verifiable only after its delivery actually succeeded.
+func (s *RedisStore) Delete(ctx context.Context, purpose, channel, target string) error {
+	return s.client.Del(ctx, s.key(purpose, channel, target)).Err()
 }
 
 // Verify atomically checks the code against the stored record.

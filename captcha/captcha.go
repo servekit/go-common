@@ -203,10 +203,18 @@ func (c *Captcha) Generate(ctx context.Context, target, purpose, channel string,
 		return "", "", fmt.Errorf("store code: %w", err)
 	}
 
-	// Invoke send hook if provided.
+	// Invoke send hook if provided. A failed delivery rolls the stored code
+	// back: a code is verifiable ONLY after its delivery API call succeeded,
+	// so a target that never received anything can never complete a
+	// verification-gated write (register/bind). Rollback is best-effort — if
+	// Delete fails the code still expires via TTL, and the send error (not
+	// the rollback error) is the actionable signal for the caller.
 	if gc.send != nil {
 		if err := gc.send(ctx, target, code, purpose, channel); err != nil {
-			return captchaID, code, fmt.Errorf("send code: %w", err)
+			if delErr := c.store.Delete(ctx, purpose, channel, target); delErr != nil {
+				fmt.Printf("captcha: rollback after send failure (key may linger until TTL): %v\n", delErr)
+			}
+			return "", "", fmt.Errorf("send code: %w", err)
 		}
 	}
 
