@@ -45,6 +45,7 @@ import (
 | Redis 分布式锁 | `redisx` | `redisx.NewLock(client, cfg)` |
 | 定时任务 | `cronx` | `cronx.New(cfg)` |
 | gRPC + HTTP gateway | `grpcx` | `grpcx.New(cfg, reg, regMW).Run()` |
+| 可信租户身份 x-tenant-key 传递/校验 | `tenantctx` | `tenantctx.WithTenant(ctx, key)` / `tenantctx.ValidTenantKey(key)` |
 | 并发 / goroutine 安全 | `gorx` | `gorx.GoSafe(fn)` / `gorx.NewRoutineGroup()` |
 | 服务组件生命周期编排 | `lifecycle` | `lifecycle.NewManager()` |
 | 信号 → 优雅关闭 | `signalx` | `signalx.Run(svc)` |
